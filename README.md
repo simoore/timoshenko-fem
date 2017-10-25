@@ -1,6 +1,6 @@
 # timoshenko-fem
 
-This project is a small example of codeing the finite element method. The coded
+This project is a small example of coding the finite element method. The coded
 example is to determine the modal frequencies of a Timoshenko cantilever.
 
 <!--
