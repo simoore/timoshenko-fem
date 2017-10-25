@@ -121,6 +121,7 @@ def main():
     num_modes = 5
         
     w, v = modal_analysis(E, h, poisson, L, wid, rho, num_elements, num_modes)
+    
     Iz = h ** 3 / 12
     A = wid * h
     normlams = [1.8751, 4.6941, 7.8548, 10.996, 14.137]
