@@ -3,7 +3,7 @@
 This project is a small example of codeing the finite element method. The coded
 example is to determine the modal frequencies of a Timoshenko cantilever.
 
-
+<!--
 The kinematics of a Timoshenko beam are:
 
 $$ u_1(x,y,z) = y\theta(x), \qquad u_3(x,y,z) = w(x). $$
@@ -49,7 +49,7 @@ $$
     K_e = \int_{-1}^{1}EI\left(\frac{1}{a}\frac{dN}{d\xi})^T
         \left(\frac{1}{a}\frac{dN}{d\xi})
 $$
-
+-->
 
 ## References
 
