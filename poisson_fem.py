@@ -1,7 +1,9 @@
+from math import floor
 import time
 import numpy as np
 import scipy.sparse as sparse
-
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 class Node(object):
     
@@ -17,6 +19,7 @@ class Node(object):
         
         
     def __repr__(self):
+        
         return 'Node %d: %d, %d' % (self.dof, self.i, self.j)
         
         
@@ -95,8 +98,9 @@ class ElementModel(object):
         self.ke = ke
         self.fe = fe
         
-            
-    def shapes(self, point):
+          
+    @staticmethod
+    def shapes(point):
         """
         :point: the point (xi, eta) to evaluate the shape functions.
         """
@@ -123,6 +127,7 @@ class AssemblerBlock(object):
         
         
     def get_system(self):
+        
         return self.sysk1, self.sysf1
 
 
@@ -161,6 +166,7 @@ class AssemblerIterative(object):
 
 
     def get_system(self):
+        
         return self.sysk2, self.sysf2
 
 
@@ -172,7 +178,7 @@ class AssemblerVector(object):
     2011; Volume 43, Issue 1, pp 1–16;
     """
     def __init__(self, mesh, model, k, q):
-    
+
         t0 = time.time()
         kr = np.hstack([np.hstack([e.dofs for _ in range(4)]) for e in mesh.elements])
         kc = np.hstack([np.hstack([d*np.ones(4) for d in e.dofs]) for e in mesh.elements])
@@ -192,27 +198,145 @@ class AssemblerVector(object):
         
         
     def get_system(self):
+        
         return self.sysk3, self.sysf3
     
-
-if __name__ == '__main__':
     
-    nelx = 20
-    nely = 20
-    a = 0.1
-    b = 0.1
+class FiniteElement(object):
     
-    mesh = RectangularMesh(nelx, nely)
-    model = ElementModel(a, b)
-    
-    # q is the sources, k is the conduction.
-    q = np.zeros(mesh.n_elem)
-    q[7] = 1
-    k = np.arange(mesh.n_elem) + 1
-       
-    assembler = AssemblerVector(mesh, model, k, q)
-    sysk, sysf = assembler.get_system()
-    sysk = sysk[mesh.free_dofs, :][:, mesh.free_dofs]
-    sysf = sysf[mesh.free_dofs]
-    u = sparse.linalg.spsolve(sysk, sysf)
+    def __init__(self):
+        """On initialization, the finite element analysis is executed step
+        by step and the solution is saved.
+        """
+        # Constants defining the domain of the problem.
+        self.a = 0.1
+        self.b = 0.1
+        self.nelx = 20
+        self.nely = 20
         
+        # Initialize mesh and the element matrices.
+        self.mesh = RectangularMesh(self.nelx, self.nely)
+        self.model = ElementModel(self.a, self.b)
+        
+        # Get the parameters of the problem and assemble system matrices.
+        k, q = self.define_k_and_q(self.mesh)
+        assembler = AssemblerVector(self.mesh, self.model, k, q)
+        sysk, sysf = assembler.get_system()
+        
+        # Apply boundary conditions.
+        sysk = sysk[self.mesh.free_dofs, :][:, self.mesh.free_dofs]
+        sysf = sysf[self.mesh.free_dofs]
+        
+        # Solve system of equations.
+        self.u = sparse.linalg.spsolve(sysk, sysf)
+        
+        # Add in the boundary dofs.
+        self.uall = np.zeros(self.mesh.all_dofs.shape)
+        self.uall[self.mesh.free_dofs] = self.u
+        
+        
+    def interpolate(self, x, y):
+        """Using the solution stored in 'self.uall' the temperature value is
+        interpolated for the point (x, y).
+        
+        Parameters
+        ----------
+        :x,y: The coordinate of the point at which the temperature is 
+              calculated.
+              
+        Returns
+        -------
+        :u: The temperature at the point (x,y).
+        """
+        i0 = floor(x / (2*self.a))
+        j0 = floor(y / (2*self.b))
+        x0 = (x - self.a*(2*i0 + 1)) / self.a
+        y0 = (y - self.b*(2*j0 + 1)) / self.b
+        e = self.mesh.elements_2D[i0][j0]
+        ue = self.uall[e.dofs]
+        n, _, _ = self.model.shapes((x0, y0))
+        u = np.sum(ue * n)
+        return u
+        
+        
+    def plot(self):
+        """Plots the temperature field calculated using the finite element
+        analysis.
+        """
+        
+        # Determine the points over which to evaluate the temperature.
+        delta_x = 2 * self.a * 0.1
+        delta_y = 2 * self.b * 0.1
+        x = np.arange(0, 2*self.nelx*0.1, delta_x)
+        y = np.arange(0, 2*self.nely*0.1, delta_y)
+        mx, my = np.meshgrid(x, y)
+        
+        # Determine the temperature at each point for the plot.
+        mz = np.zeros(mx.shape)
+        nx, ny = my.shape
+        for i in range(nx):
+            for j in range(ny):
+                mz[i, j] = self.interpolate(mx[i, j], my[i, j])
+
+        # Create a contour plot.
+        fig, ax = plt.subplots()
+        cs = ax.contour(mx, my, mz, 8)
+        ax.clabel(cs, inline=1, fontsize=10)
+        ax.set_title('Temperature Distribution Contour Plot')
+        
+        # Annotate the point of maximum temperature.
+        index_array = np.argmax(mz)
+        max_x = np.ravel(mx)[index_array]
+        max_y = np.ravel(my)[index_array]
+        max_z = mz.ravel()[index_array]
+        ax.annotate('max: %g' % max_z, 
+                    xy=(max_x, max_y), xytext=(max_x, max_y-0.4),
+                    arrowprops=dict(facecolor='black', shrink=0.05, width=2))
+        
+        # Highlight the element with the heat source.
+        ax.add_patch(patches.Rectangle((1.1, 3.7), 0.2, 0.2))
+        ax.annotate('heat source', xy=(1.3, 3.7), xytext=(1.35, 3.7))
+        
+        # Highlight the area of poor conductivity.
+        ax.add_patch(patches.Rectangle((0, 0.6), 4, 2.6, alpha=0.1))    
+        note = 'Area of low conductivity'
+        ax.annotate(note, xy=(2, 0.7), xytext=(2, 0.7))
+        
+        #fig.savefig('poisson.png', dpi=300)
+
+
+    @staticmethod
+    def define_k_and_q(mesh):
+        """
+        `k` is the heat conductivity, and `q` is the heat source per unit area. 
+        In this code, each are constant for each element. In this example a 
+        heat source is placed on a single element at coordinate (1.1, 3.7).
+        The heat conductivity is given a value of 0.01 for x in (0.6, 3.2), 
+        otherwise a value of 1.
+        
+        Parameters
+        ----------
+        :mesh: The mesh is used to determine where the areas of low 
+               conductivity are, and the location of the heat source.
+               
+        Returns
+        -------
+        :k: The array of heat conductivity values for each element in an
+            order matching that of mesh.elements.
+        :q: The heat source on each element.
+        """
+        k = np.zeros(len(mesh.elements))
+        q = np.zeros(len(mesh.elements))
+        
+        for i, e in enumerate(mesh.elements):
+            k[i] = 1e-2 if 3 < e.j < 16 else 1
+            q[i] = 1 if e.i == 5 and e.j == 18 else 0
+        
+        return k, q
+                
+    
+if __name__ == '__main__':
+     
+    fem = FiniteElement()
+    fem.plot()
+            
