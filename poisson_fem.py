@@ -311,7 +311,7 @@ class FiniteElement(object):
         `k` is the heat conductivity, and `q` is the heat source per unit area. 
         In this code, each are constant for each element. In this example a 
         heat source is placed on a single element at coordinate (1.1, 3.7).
-        The heat conductivity is given a value of 0.01 for x in (0.6, 3.2), 
+        The heat conductivity is given a value of 0.01 for y in (0.6, 3.2), 
         otherwise a value of 1.
         
         Parameters
