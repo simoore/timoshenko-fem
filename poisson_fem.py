@@ -2,6 +2,7 @@ from math import floor
 import time
 import numpy as np
 import scipy.sparse as sparse
+import scipy.sparse.linalg as linalg
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
@@ -228,7 +229,7 @@ class FiniteElement(object):
         sysf = sysf[self.mesh.free_dofs]
         
         # Solve system of equations.
-        self.u = sparse.linalg.spsolve(sysk, sysf)
+        self.u = linalg.spsolve(sysk, sysf)
         
         # Add in the boundary dofs.
         self.uall = np.zeros(self.mesh.all_dofs.shape)
@@ -280,9 +281,9 @@ class FiniteElement(object):
 
         # Create a contour plot.
         fig, ax = plt.subplots()
-        cs = ax.contour(mx, my, mz, 8)
+        cs = ax.contour(mx*5, my*5, mz, 8, colors='k')
         ax.clabel(cs, inline=1, fontsize=10)
-        ax.set_title('Temperature Distribution Contour Plot')
+        ax.set_title('Temperature Distribution')
         
         # Annotate the point of maximum temperature.
         index_array = np.argmax(mz)
@@ -290,19 +291,28 @@ class FiniteElement(object):
         max_y = np.ravel(my)[index_array]
         max_z = mz.ravel()[index_array]
         ax.annotate('max: %g' % max_z, 
-                    xy=(max_x, max_y), xytext=(max_x, max_y-0.4),
+                    xy=(5*max_x, 5*max_y), xytext=(max_x*5, 5*(max_y-0.4)),
                     arrowprops=dict(facecolor='black', shrink=0.05, width=2))
         
-        # Highlight the element with the heat source.
-        ax.add_patch(patches.Rectangle((1.1, 3.7), 0.2, 0.2))
-        ax.annotate('heat source', xy=(1.3, 3.7), xytext=(1.35, 3.7))
         
-        # Highlight the area of poor conductivity.
-        ax.add_patch(patches.Rectangle((0, 0.6), 4, 2.6, alpha=0.1))    
+        # Highlight the area of high and low conductivity.
+        k, q = self.define_k_and_q(self.mesh)
+        for i, e in enumerate(self.mesh.elements):
+            x = e.i * 1
+            y = e.j * 1
+            if k[i] < 1:
+                ax.add_patch(patches.Rectangle((x, y), 1, 1, alpha=0.1))
+            else:
+                ax.add_patch(patches.Rectangle((x, y), 1, 1, alpha=0.8))
+        
         note = 'Area of low conductivity'
-        ax.annotate(note, xy=(2, 0.7), xytext=(2, 0.7))
+        ax.annotate(note, xy=(2*5, 0.85*5))
+        note = 'Area of high conductivity'
+        ax.annotate(note, xy=(2*5, 0.60*5))
+        note = 'Temperature Boundary (T=0)'
+        ax.annotate(note, xy=(2*5, 0.05*5))
         
-        #fig.savefig('poisson.png', dpi=300)
+        fig.savefig('poisson.png', dpi=300)
 
 
     @staticmethod
@@ -329,9 +339,9 @@ class FiniteElement(object):
         q = np.zeros(len(mesh.elements))
         
         for i, e in enumerate(mesh.elements):
-            k[i] = 1e-2 if 3 < e.j < 16 else 1
-            q[i] = 1 if e.i == 5 and e.j == 18 else 0
-        
+            k[i] = 1e-2 if (3 < e.j < 16) or (e.j > 15 and e.i > 10) else 1
+            q[i] = 1 if k[i] == 1 else 0
+            
         return k, q
                 
     
