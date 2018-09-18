@@ -290,7 +290,7 @@ class FiniteElement(object):
         ax.grid(linestyle='-', linewidth='0.5', color='grey')
         ax.set_yticklabels([])
         ax.set_xticklabels([])
-        ax.tick_params(direction='in')
+        ax.tick_params(direction='in', color='grey', width='0.5')
         
         # Annotate the point of maximum temperature.
         index_array = np.argmax(mz)
