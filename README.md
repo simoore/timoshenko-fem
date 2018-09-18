@@ -2,7 +2,17 @@
 
 This project is a small example of coding the finite element method. The first 
 coded example is to determine the modal frequencies of a Timoshenko cantilever.
-The second solves Poisson't equation which models many physical phenomena. 
+The second solves Poisson's equation which models many physical phenomena. 
+
+
+## Timoshenko Beam
+
+The finite element method for a Timoshenko beam derives a mass and stiffness
+matrix which governs the behaviour of the beam. With no applied force there
+is a non-trival solution found from an eigenvalue problem. The coded example
+determines the first 5 modal frequencies of the beam from the eigenvalue 
+problem and compares them with the theoretical modal frequencies of an 
+Euler-Bernoulli beam.
 
 
 ## Poisson's Equation
@@ -13,9 +23,9 @@ used to determine the temperature field `T(x,y)` resulting from a set of
 heat sources `Q(x,y)` on a rectangular structure with varying heat conductivity
 `k(x,y)`.
 
-The coded example determines the temperature field over a rectangular domain
-due to a heat source placed on a single element. An area through the middle
-of the domain is given a lower heat conductivity. The solution is shown below.
+The coded example determines the temperature field over a rectangular domain 
+due to presence of heat sources in high conductivity areas seperated by
+insulating areas. The solution is shown below.
 
 ![Solution of Poisson's Equation](poisson.png)
 

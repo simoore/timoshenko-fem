@@ -284,6 +284,13 @@ class FiniteElement(object):
         cs = ax.contour(mx*5, my*5, mz, 8, colors='k')
         ax.clabel(cs, inline=1, fontsize=10)
         ax.set_title('Temperature Distribution')
+        ax.set_yticks(list(range(20)))
+        ax.set_xticks(list(range(20)))
+        
+        ax.grid(linestyle='-', linewidth='0.5', color='grey')
+        ax.set_yticklabels([])
+        ax.set_xticklabels([])
+        ax.tick_params(direction='in')
         
         # Annotate the point of maximum temperature.
         index_array = np.argmax(mz)
@@ -305,6 +312,8 @@ class FiniteElement(object):
             else:
                 ax.add_patch(patches.Rectangle((x, y), 1, 1, alpha=0.8))
         
+        
+        
         note = 'Area of low conductivity'
         ax.annotate(note, xy=(2*5, 0.85*5))
         note = 'Area of high conductivity'
@@ -319,10 +328,7 @@ class FiniteElement(object):
     def define_k_and_q(mesh):
         """
         `k` is the heat conductivity, and `q` is the heat source per unit area. 
-        In this code, each are constant for each element. In this example a 
-        heat source is placed on a single element at coordinate (1.1, 3.7).
-        The heat conductivity is given a value of 0.01 for y in (0.6, 3.2), 
-        otherwise a value of 1.
+        In this code, each are constant for each element.
         
         Parameters
         ----------
